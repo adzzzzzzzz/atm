@@ -2,224 +2,195 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <cstdlib>
-#include <stack>
+
 using namespace std;
 
-class accountHolderDetails
-{
-private:
-	int dob;
-	int accountNumber;
-	char accountType[10];
-	char ifscCode[10];
+struct privateinfo {
+    string username;
+    string password;
+    long long balance;
 };
 
-class basicInfo
-{
-private:
-	char previousLanguage[10];
+void createAccount(privateinfo& l) {
+    ofstream file("accounts.txt", ios::app);
+    cout << "Enter username: ";
+    cin >> l.username;
+    cout << "Enter password: ";
+    cin >> l.password;
+    cout << "Enter initial balance: ";
+    cin >> l.balance;
+    file << l.username << "," << l.password << "," << l.balance << endl;
+    file.close();
+    cout << "Account created successfully!" << endl;
+}
 
-public:
-	void langChange()
-	{
-		int a;
-		cout << "what is your preferred language?" << endl;
-		cout << "1. english" << endl;
-		cout << "2. other languages" << endl;
-		cin >> a;
-		switch (a)
-		{
-		case 1:
-			cout << "done" << endl;
-			break;
-		case 2:
-			cout << "we do not support any other language than english. sorry! kindly adjust or press exit." << endl;
-			break;
-		default:
-			cout << "invalid" << endl;
-			break;
-		}
-	}
-};
+bool login(privateinfo& l) {
+    ifstream file("accounts.txt");
+    string line;
+    cout << "Enter username: ";
+    cin >> l.username;
+    cout << "Enter password: ";
+    string p;
+    cin >> p;
+    bool found = false;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string uname, pstr;
+        long long bal;
+        getline(ss, uname, ',');
+        getline(ss, pstr, ',');
+        ss >> bal;
+        if (uname == l.username && pstr == p) {
+            found = true;
+            l.password = p;
+            l.balance = bal;
+            break;
+        }
+    }
+    file.close();
+    return found;
+}
 
-class privateinfo
-{
-private:
-	int pin;
-	
+void amountDeposit(privateinfo& l, long long amount) {
+    l.balance += amount;
+    ofstream file("accounts.txt", ios::out | ios::trunc);
+    ifstream temp("accounts.txt");
+    string line;
+    while (getline(temp, line)) {
+        stringstream ss(line);
+        string uname, pstr;
+        long long p;
+        getline(ss, uname, ',');
+        getline(ss, pstr, ',');
+        p = stol(pstr);
+        long long bal;
+        ss >> bal;
+        if (uname == l.username) {
+            file << uname << "," << l.password << "," << l.balance << endl;
+        } else {
+            file << line << endl;
+        }
+    }
+    temp.close();
+    file.close();
+    ofstream trans("transactions.txt", ios::app);
+    trans << l.username << "," << "Deposit of " << amount << endl;
+    trans.close();
+    cout << "Deposit successful!" << endl;
+}
 
-public:
-	long long b;
-	int cardNumber;
-	stack<long long> passdb;
-public:
-	void enterPin()
-	{
-		cout << "enter your pin no. it must be of 4 digits." << endl;
-		cin >> b;
-		if (b < 1000 || b > 9999)
-		{
-			cout << "it is not of 4 digits" << endl;
-			enterPin();
-		}
-		passdb.push(b);
-	}
-	void changePin()
-	{
-		int c;
-		long long d, e;
-		if (checkPin())
-		{
-			cout << "enter new pin" << endl;
-			cin >> e;
-			if (e < 1000 || e > 9999)
-			{
-				cout << "it is not of 4 digits" << endl;
-				changePin();
-			}
-			else
-			{
-				passdb.push(e);
-				cout << "done." << endl;
-			}
-		}
-		else
-		{
-			cout << "wrong pin. going back to home" << endl;
-		}
-	}
-	bool checkPin()
-	{
-		long long d;
-		cout << "enter current pin." << endl;
-		cin >> d;
-		if (passdb.top() == d)
-			return true;
-		else
-			return false;
-	}
-public:
-	long long g;
+void amountNeeded(privateinfo& l, long long amount) {
+    if (l.balance >= amount) {
+        l.balance -= amount;
+        ofstream file("accounts.txt", ios::out | ios::trunc);
+        ifstream temp("accounts.txt");
+        string line;
+        while (getline(temp, line)) {
+            stringstream ss(line);
+            string uname, pstr;
+            long long p;
+            getline(ss, uname, ',');
+            getline(ss, pstr, ',');
+            p = stol(pstr);
+            long long bal;
+            ss >> bal;
+            if (uname == l.username) {
+                file << uname << "," << l.password << "," << l.balance << endl;
+            } else {
+                file << line << endl;
+            }
+        }
+        temp.close();
+        file.close();
+        ofstream trans("transactions.txt", ios::app);
+        trans << l.username << "," << "Withdrawal of " << amount << endl;
+        trans.close();
+        cout << "Withdrawal successful!" << endl;
+    } else {
+        cout << "Insufficient balance" << endl;
+    }
+}
 
-public:
-	void amountThere()
-	{
-		cout << "enter amount you have" << endl;
-		cin >> g;
-		if (g > 9999999999)
-		{
-			cout << "so much amount in not allowed in your account type." << endl;
-			amountThere();
-		}
-	}
-	void amountNeeded()
-	{
-		long h;
-		if (checkPin())
-		{
-			cout << "enter amount to be debited." << endl;
-			cin >> h;
-			if (h > 10000 || h > g)
-			{
-				cout << "amount over limit." << endl;
-			}
-			else
-			{
-				cout << "rs." << h << " debited." << endl;
-				g = g - h;
-			}
-		}
-		else
-			cout << "wrong pin" << endl;
-	}
-	void miniStatement()
-	{
-		if (checkPin())
-		{
-			cout << "\nhello! welcome to assam gramin vikash bank" << endl;
-			cout << "here is your mini statement : " << endl;
-			cout << "you have rs." << g << " left in your account.\n"
-				 << endl;
-		}
-		else
-		{
-			cout << "wrong pin." << endl;
-		}
-	}
-	void amountDeposit()
-	{
-		long o;
-		if (checkPin())
-		{
-			cout << "enter amount to be deposited." << endl;
-			cin >> o;
-			if ((g + o) > 9999999999)
-			{
-				cout << "so much amount in not allowed in your account type." << endl;
-			}
-			else
-			{
-				cout << "rs." << o << " deposited." << endl;
-				g = g + o;
-			}
-		}
-		else
-			cout << "wrong pin" << endl;
-	}
-};
+void miniStatement(privateinfo& l) {
+    ifstream file("transactions.txt");
+    string line;
+    cout << "Your mini statement:" << endl;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string uname, trans;
+        getline(ss, uname, ',');
+        getline(ss, trans, ',');
+        if (uname == l.username) {
+            cout << trans << endl;
+        }
+    }
+    cout << "Total balance: " << l.balance << endl;
+    file.close();
+}
 
-int main()
-{
-	cout << "enter your name. ";
-	string name;
-	cin >> name;
-	cout << "hi " << name << endl;
-	basicInfo j;
-	privateinfo l;
-	l.enterPin();
-	l.amountThere();
-	cout << "---------------------------------------" << endl;
-	cout << "ATM service starts here!" << endl;
-	cout << "---------------------------------------" << endl;
-	int m;
-	int u = 0;
-	while (u == 0)
-	{
-		cout << "what do you want to do today?" << endl;
-		cout << "1. language preference." << endl;
-		cout << "2. change pin." << endl;
-		cout << "3. debit amount." << endl;
-		cout << "4. mini statement." << endl;
-		cout << "5. deposit amount." << endl;
-		cout << "6. exit." << endl;
-		cin >> m;
-		{
-			switch (m)
-			{
-			case 1:
-				j.langChange();
-				break;
-			case 2:
-				l.changePin();
-				break;
-			case 3:
-				l.amountNeeded();
-				break;
-			case 4:
-				l.miniStatement();
-				break;
-			case 5:
-				l.amountDeposit();
-				break;
-			case 6:
-				u = 1;
-				break;
-			default:
-				cout << "invalid" << endl;
-				break;
-			}
-		}
-	}
-	cout << "bye! have a nice day." << endl;
+int main() {
+    privateinfo l;
+    int choice;
+    while (true) {
+        cout << "1. Create Account" << endl;
+        cout << "2. Login" << endl;
+        cout << "3. Exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        switch (choice) {
+            case 1:
+                createAccount(l);
+                break;
+            case 2:
+                if(!login(l))
+                {
+                    cout << "Invalid username or password" << endl;
+                }
+                else
+                {while(true) {
+                        cout << "1. Deposit" << endl;
+                        cout << "2. Withdrawal" << endl;
+                        cout << "3. Mini Statement" << endl;
+                        cout << "4. Logout" << endl;
+                        cout << "Enter your choice: ";
+                        int choice2;
+                        cin >> choice2;
+                        switch (choice2) {
+                            case 1: {
+                                long long amount;
+                                cout << "Enter amount to deposit: ";
+                                cin >> amount;
+                                amountDeposit(l, amount);
+                                break;
+                            }
+                            case 2: {
+                                long long amount;
+                                cout << "Enter amount to withdraw: ";
+                                cin >> amount;
+                                amountNeeded(l, amount);
+                                break;
+                            }
+                            case 3:
+                                miniStatement(l);
+                                break;
+                            case 4:
+                                cout << "Logged out successfully!" << endl;
+                                break;
+                            default:
+                                cout << "Invalid choice" << endl;
+                        }
+                        if (choice2 == 4) {
+                            break;
+                        }
+                    }
+                }                   
+                break;
+            case 3:
+                cout << "Exiting..." << endl;
+                return 0;
+            default:
+                cout << "Invalid choice" << endl;
+        }
+    }
+    return 0;
 }
